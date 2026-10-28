@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Two IdPs and one SP, like a small federation aggregate. -->
+<EntitiesDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui">
+  <EntityDescriptor entityID="https://idp.alpha.edu/idp/shibboleth">
+    <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+      <Extensions><mdui:UIInfo><mdui:DisplayName xml:lang="en">Alpha University</mdui:DisplayName></mdui:UIInfo></Extensions>
+      <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp.alpha.edu/idp/profile/SAML2/Redirect/SSO"/>
+    </IDPSSODescriptor>
+  </EntityDescriptor>
+  <EntityDescriptor entityID="https://login.beta.edu/idp">
+    <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+      <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://login.beta.edu/sso"/>
+    </IDPSSODescriptor>
+    <Organization><OrganizationName>Beta</OrganizationName><OrganizationDisplayName>Beta College</OrganizationDisplayName><OrganizationURL>https://beta.edu</OrganizationURL></Organization>
+  </EntityDescriptor>
+  <EntityDescriptor entityID="https://sp.gamma.edu/shibboleth">
+    <SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"/>
+  </EntityDescriptor>
+</EntitiesDescriptor>
