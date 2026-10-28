@@ -3,11 +3,24 @@
 Put Shibboleth (SAML 2.0) single sign-on in front of any web application served
 by nginx, on Debian or Ubuntu, with one script.
 
-Shibboleth's own documentation covers Apache. For nginx there is the
-[nginx-http-shibboleth](https://github.com/nginx-shib/nginx-http-shibboleth)
-module, but you still have to build it for your exact nginx version, run the
-Shibboleth FastCGI programs yourself, and wire the pieces together. This toolkit
-does all of that and explains each part.
+## Why this exists
+
+I built this while adding university SSO to a research application served by
+nginx. The official Shibboleth SP documentation is written for Apache, where
+the `mod_shib` module handles everything inside the web server, so it does not
+apply to nginx as written. nginx has no equivalent module. A working setup
+needs several extra pieces, each documented in a different place:
+
+- the [nginx-http-shibboleth](https://github.com/nginx-shib/nginx-http-shibboleth)
+  module, a separate project that you build for your exact nginx version
+- the headers-more module, so that clients cannot forge identity headers
+- Shibboleth's FastCGI authorizer and responder, kept running by supervisor
+- nginx configuration that connects them
+
+Getting this to work meant a lot of server-side setup and trial and error.
+This toolkit turns that setup into one script: it asks a few questions,
+configures every piece, and checks that the result works. The sections below
+explain what each piece does.
 
 ## Quick start
 
@@ -75,13 +88,33 @@ browser ──▸ nginx ──shib_request──▸ shibauthorizer (FastCGI) ─
 | nginx module | Builds `ngx_http_shibboleth_module.so` (pinned release) against **the installed nginx version** and loads it. A dynamic module only loads into the exact version it was built for, so the build uses the `nginx-dev` sources, or the matching nginx.org source when `nginx-dev` is unavailable | `/usr/lib/nginx/modules/`, `/etc/nginx/modules-enabled/50-mod-http-shibboleth.conf` |
 | SP keys | Creates separate signing and encryption key pairs, only if missing, so a rerun never invalidates your IdP registration | `/etc/shibboleth/sp-{signing,encrypt}-{key,cert}.pem` |
 | SP configuration | Downloads the IdP metadata, finds the IdP entityID in it, and writes the SP configuration. When a signing certificate is given, shibd rejects metadata that is not signed by it | `/etc/shibboleth/shibboleth2.xml`, `attribute-map.xml`, `idp-metadata-signing.crt` |
-| FastCGI | nginx cannot start FastCGI programs, so supervisor runs `shibauthorizer` and `shibresponder`. Their sockets live in their own directory and only nginx's group can use them | `/etc/supervisor/conf.d/shibboleth.conf`, `/etc/tmpfiles.d/shibboleth-fastcgi.conf` |
+| FastCGI | nginx cannot start FastCGI programs, so supervisor runs `shibauthorizer` and `shibresponder`. Their sockets in `/run/shibboleth` are open only to nginx's group | `/etc/supervisor/conf.d/shibboleth.conf` |
 | nginx | Writes snippets, and in `full` mode a site that proxies to your application. Every location strips client-supplied identity headers, so nobody can impersonate a user by sending `eppn: someone@...` | `/etc/nginx/snippets/shibboleth/`, `/etc/nginx/sites-available/shibboleth-<host>.conf` |
 | TLS | Gets a Let's Encrypt certificate through the HTTP-01 webroot challenge, with renewal reloading nginx; or uses your certificate | `/etc/letsencrypt/` |
 | Verify | Runs `shibd -t`, `nginx -t`, checks the FastCGI programs and `/Shibboleth.sso/Status`, and confirms a protected path redirects to the IdP | — |
 
 A file that would change is first copied to
 `/var/backups/nginx-shibboleth-toolkit/<timestamp>/`.
+
+## Problems this toolkit handles
+
+These are the pitfalls I ran into while setting this up by hand:
+
+- **Module version:** a dynamic nginx module loads only into the exact nginx
+  version it was built for. A module built from other nginx source compiles,
+  then stops nginx from starting.
+- **Debian's `nginx-dev`:** it provides build sources that match the installed
+  nginx, but has no top-level Makefile, so `make modules` fails. Use
+  `make -f objs/Makefile modules`.
+- **Forged identity headers:** unless every location strips them, a client can
+  send `eppn: someone@example.edu` and be treated as that user. headers-more
+  does not accept wildcards such as `Shib-*` here, so every name is listed.
+- **`REMOTE_USER`:** nginx and gunicorn drop headers that contain underscores,
+  so this header never reaches the application. The toolkit sends `Remote-User`.
+- **`shib-keygen -e`:** `-e` takes the entityID as its value. Writing
+  `-e -o /etc/shibboleth` makes a certificate for the entityID `-o`.
+- **SP keys:** generating new keys breaks the registration with the IdP. The
+  toolkit creates keys only when none exist.
 
 ## Using your own nginx server block
 

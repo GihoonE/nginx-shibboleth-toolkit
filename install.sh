@@ -11,8 +11,8 @@ MODULE_SO=/usr/lib/nginx/modules/ngx_http_shibboleth_module.so
 SHIB_DIR=/etc/shibboleth
 SNIPPETS=/etc/nginx/snippets/shibboleth
 ACME_ROOT=/var/www/letsencrypt
-# Own directory: shibd's /run/shibboleth can be emptied when shibd restarts.
-SOCKET_DIR=/run/shibboleth-fastcgi
+# Created at boot by the shibboleth-sp-utils tmpfiles entry; shibd restarts keep it.
+SOCKET_DIR=/run/shibboleth
 BACKUP_DIR=/var/backups/nginx-shibboleth-toolkit/$(date +%Y%m%d-%H%M%S)
 
 CMD=install
@@ -421,9 +421,6 @@ configure_shibboleth() {
 configure_supervisor() {
     log "Starting the FastCGI authorizer and responder"
     [[ -x $SHIB_LIBEXEC/shibauthorizer ]] || die "$SHIB_LIBEXEC/shibauthorizer is missing; this shibboleth-sp-utils was built without FastCGI"
-    printf 'd %s 0750 root %s -\n' "$SOCKET_DIR" "$NGINX_GROUP" >"$WORK/tmpfiles.conf"
-    put "$WORK/tmpfiles.conf" /etc/tmpfiles.d/shibboleth-fastcgi.conf 0644
-    systemd-tmpfiles --create /etc/tmpfiles.d/shibboleth-fastcgi.conf
     put "$STAGE/supervisor-shibboleth.conf" /etc/supervisor/conf.d/shibboleth.conf 0644
     systemctl enable -q --now supervisor
     # A freshly started supervisord needs a moment before supervisorctl can connect.

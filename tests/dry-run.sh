@@ -41,7 +41,7 @@ grep -q 'return 301 https://$host$request_uri;' "$stage/site-http.conf" || fail 
 grep -q 'shib_request_set $shib_subject_id $upstream_http_variable_subject_id;' "$stage/protect.conf" || fail "attribute variable"
 grep -q 'proxy_set_header displayName $shib_displayname;' "$stage/protect.conf" || fail "attribute header"
 grep -q 'more_clear_input_headers subject-id;' "$stage/clear-headers.conf" || fail "clear header"
-grep -q 'unix:/run/shibboleth-fastcgi/shibauthorizer.sock' "$stage/handlers.conf" || fail "socket"
+grep -q 'unix:/run/shibboleth/shibauthorizer.sock' "$stage/handlers.conf" || fail "socket"
 ! grep -n '\${' "$stage"/*.conf "$stage/shibboleth2.xml" || fail "unreplaced placeholder"
 
 # A federation without IDP_ENTITY_ID must stop instead of guessing.

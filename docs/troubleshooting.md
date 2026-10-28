@@ -38,8 +38,7 @@ Logs:
 | nginx does not start: `module ... is not binary compatible` | nginx was upgraded after the module was built | `sudo ./install.sh module` |
 | `unknown directive "shib_request"` | Module not loaded | Check `/etc/nginx/modules-enabled/50-mod-http-shibboleth.conf`, then run `sudo ./install.sh module` |
 | `unknown directive "more_clear_input_headers"` | headers-more module missing | `sudo apt install libnginx-mod-http-headers-more-filter` |
-| 502 Bad Gateway on a protected path or `/Shibboleth.sso` | FastCGI program down, or nginx cannot open the socket | `sudo supervisorctl status`, `ls -l /run/shibboleth-fastcgi/`. The socket group must be nginx's group |
-| 502 after a reboot | Socket directory missing | `sudo systemd-tmpfiles --create /etc/tmpfiles.d/shibboleth-fastcgi.conf && sudo supervisorctl restart all` |
+| 502 Bad Gateway on a protected path or `/Shibboleth.sso` | FastCGI program down, or nginx cannot open the socket | `sudo supervisorctl status`, `ls -l /run/shibboleth/`. The socket group must be nginx's group |
 | "Unable to locate metadata for identity provider" | IdP metadata did not load: wrong URL, failed download or signature check | `shibd.log`. Verify `METADATA_URL` and `METADATA_CERT_URL` |
 | `shibd.log`: signature verification failed | The certificate does not sign this metadata | Get the current signing certificate from the identity team |
 | IdP: "not registered", or an error naming the ACS URL | SP not registered, or registered with a different entityID or ACS | Register the values from `sudo ./install.sh info` |
